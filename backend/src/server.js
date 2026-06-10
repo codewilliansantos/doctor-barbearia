@@ -19,6 +19,9 @@ const { tenantMiddleware } = require('./middleware/tenant');
 const app = express();
 const startedAt = Date.now();
 
+// Railway / load balancer — confia no X-Forwarded-For
+app.set('trust proxy', 1);
+
 process.on('uncaughtException',  err => { console.error('❌', err.message); Sentry.captureException(err); });
 process.on('unhandledRejection', err => { console.error('❌', err.message); Sentry.captureException(err); });
 
