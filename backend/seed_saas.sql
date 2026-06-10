@@ -1,0 +1,3 @@
+﻿INSERT INTO tenants (nome, slug_subdominio, email, whatsapp, ativo) VALUES ('Doctor Barbearia', 'doctor', 'contato@doctorbarbearia.com', '5512982671917', TRUE) ON CONFLICT (slug_subdominio) DO NOTHING;
+INSERT INTO planos (codigo, nome, descricao, preco_mensal, limite_agendamentos_mes, limite_barbeiros, recursos, ativo) VALUES ('starter', 'Starter', 'Plano basico', 79.90, 100, 2, '{"agendamentos":true}', TRUE), ('pro', 'Pro', 'Plano profissional', 149.90, 500, 5, '{"agendamentos":true,"financeiro":true}', TRUE), ('enterprise', 'Enterprise', 'Plano completo', 299.90, 9999, 20, '{"agendamentos":true,"financeiro":true,"saas":true}', TRUE) ON CONFLICT (codigo) DO NOTHING;
+INSERT INTO assinaturas (tenant_id, plano_id, status) VALUES (1, 1, 'ativa');
