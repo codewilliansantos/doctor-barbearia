@@ -1,0 +1,46 @@
+{
+  "name": "doctor-barbearia-api",
+  "version": "4.0.0",
+  "description": "API Doctor Barbearia",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand --forceExit"
+  },
+  "dependencies": {
+    "@sentry/node": "^7.120.4",
+    "axios": "^1.6.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "setupFiles": [
+      "<rootDir>/__tests__/helpers/setupEnv.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js",
+      "!src/jobs/**"
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#080808" />
+    <meta name="description" content="Doctor Barbearia — Agende seu horário online com os melhores barbeiros. Cortes, barba, pacotes e mais." />
+    <meta name="keywords" content="barbearia, agendamento, corte masculino, barba, são paulo" />
+    <meta name="author" content="Doctor Barbearia" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+
+    <!-- PWA iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Doctor Barbearia" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Doctor Barbearia — Agendamento Online" />
+    <meta property="og:description" content="Agende seu horário na Doctor Barbearia em segundos. Cortes, barba, pacotes e atendimento premium." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:site_name" content="Doctor Barbearia" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Doctor Barbearia" />
+    <meta name="twitter:description" content="Agende seu horário online na Doctor Barbearia" />
+
+    <!-- Preconnect para performance -->
+    <link rel="preconnect" href="http://localhost:3001" />
+
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/logo.svg" />
+
+    <title>Doctor Barbearia — Agendamento Online</title>
+  </head>
+  <body>
+    <noscript>
+      <div style="padding:40px;text-align:center;font-family:system-ui;color:#D4A857;background:#080808;min-height:100vh">
+        <h1>✂️ Doctor Barbearia</h1>
+        <p>Você precisa habilitar o JavaScript para usar este app.</p>
+      </div>
+    </noscript>
+    <div id="root"></div>
+
+    <!-- Registra o Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker
+            .register('/service-worker.js')
+            .then(reg => console.log('✅ Service Worker registrado'))
+            .catch(err => console.log('❌ SW erro:', err));
+        });
+      }
+    </script>
+  </body>
+</html>

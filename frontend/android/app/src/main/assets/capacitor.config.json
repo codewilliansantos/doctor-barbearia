@@ -1,0 +1,19 @@
+{
+	"appId": "com.doctorbarbearia.app",
+	"appName": "Doctor Barbearia",
+	"webDir": "build",
+	"bundledWebRuntime": false,
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 800,
+			"backgroundColor": "#060606",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": true,
+			"spinnerColor": "#C9A84C"
+		}
+	}
+}

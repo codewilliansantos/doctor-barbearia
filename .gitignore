@@ -1,0 +1,40 @@
+# ── Dependencies ──────────────────────────
+node_modules/
+package-lock.json.bak
+
+# ── Build artifacts ──────────────────────
+build/
+dist/
+*.log
+npm-debug.log*
+
+# ── Ambiente ─────────────────────────────
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+
+# ── IDEs ────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ───────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Backups locais ──────────────────────
+backup_schema_*.sql
+backup_full_*.sql
+
+# ── Test artifacts ──────────────────────
+coverage/
+.nyc_output/
+junit.xml
+*.test.tsbuildinfo
+
+# ── Docker ──────────────────────────────
+*.pid
+docker-compose.override.yml
