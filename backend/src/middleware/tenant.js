@@ -40,7 +40,7 @@ async function tenantMiddleware(req, res, next) {
     res.setHeader('X-Tenant', tenant.slug);
     next();
   } catch (e) {
-    console.error('tenant middleware erro:', e.message, e.stack), e.message);
+    console.error('tenant middleware erro:', e.message, e.stack);
     req.tenantId = 1;
     req.tenant  = { id: 1, slug: 'doctor' };
     next();
@@ -48,4 +48,5 @@ async function tenantMiddleware(req, res, next) {
 }
 
 module.exports = { tenantMiddleware, extrairSlug, clearCache: () => cache.clear() };
+
 
