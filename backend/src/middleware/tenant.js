@@ -1,5 +1,5 @@
-// Resolve o tenant atual a partir do subdomínio (ou path).
-// Cada cliente do SaaS tem seu próprio subdomínio (ex: doctor.doctorbarbearia.com).
+﻿// Resolve o tenant atual a partir do subdomÃ­nio (ou path).
+// Cada cliente do SaaS tem seu prÃ³prio subdomÃ­nio (ex: doctor.doctorbarbearia.com).
 // Em dev (localhost) usa DEFAULT_TENANT_SLUG.
 const pool = require('../database/connection');
 
@@ -7,13 +7,13 @@ const cache = new Map();
 const TTL = 60_000; // 1 min
 
 function extrairSlug(req) {
-  // 1) Subdomínio
+  // 1) SubdomÃ­nio
   const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase();
   const baseDomain = (process.env.BASE_DOMAIN || 'localhost:3000').toLowerCase();
   if (host && host !== baseDomain && host.endsWith('.' + baseDomain)) {
     return host.slice(0, -1 - baseDomain.length);
   }
-  // 2) Header explícito (Capacitor/PWA/iframe)
+  // 2) Header explÃ­cito (Capacitor/PWA/iframe)
   const hdrSlug = req.headers['x-tenant-slug'];
   if (hdrSlug) return String(hdrSlug).toLowerCase();
   // 3) Fallback dev
@@ -40,7 +40,7 @@ async function tenantMiddleware(req, res, next) {
     res.setHeader('X-Tenant', tenant.slug);
     next();
   } catch (e) {
-    console.error('❌ tenant middleware:', e.message);
+    console.error('tenant middleware erro:', e.message, e.stack), e.message);
     req.tenantId = 1;
     req.tenant  = { id: 1, slug: 'doctor' };
     next();
@@ -48,3 +48,4 @@ async function tenantMiddleware(req, res, next) {
 }
 
 module.exports = { tenantMiddleware, extrairSlug, clearCache: () => cache.clear() };
+
