@@ -409,8 +409,7 @@ router.get('/pacotes', autenticar, soGestor, async (req, res) => {
       LEFT JOIN pacote_servicos ps ON ps.pacote_id = p.id AND ps.tenant_id = p.tenant_id
       LEFT JOIN servicos s ON s.id = ps.servico_id AND s.tenant_id = p.tenant_id
       WHERE p.tenant_id = $1
-      GROUP BY p.id
-      ORDER BY p.criado_em DESC
+      GROUP BY p.id, p.nome, p.descricao, p.sessoes, p.preco, p.validade_dias, p.ativo, p.criado_em ORDER BY p.criado_em DESC
     `, [req.tenantId]);
     res.json({ ok: true, data: rows });
   } catch (err) {
@@ -571,5 +570,6 @@ module.exports = router;
 
 /* â”€â”€ Monta rotas financeiras no mesmo router /gestor â”€â”€ */
 router.use(financeiroRouter);
+
 
 
