@@ -1,22 +1,22 @@
-const express = require('express');
+﻿const express = require('express');
 const pool    = require('../database/connection');
 const { autenticar } = require('./auth');
 const { testarToken } = require('../services/pagseg');
 const financeiroRouter = require('./financeiro');
 const router  = express.Router();
 
-/* Middleware: só gestores */
+/* Middleware: sÃ³ gestores */
 function soGestor(req, res, next) {
   if (req.usuario.perfil !== 'gestor')
     return res.status(403).json({ ok: false, erro: 'Acesso restrito a gestores.' });
   next();
 }
 
-/* GET /gestor/dashboard — resumo do dia */
+/* GET /gestor/dashboard â€” resumo do dia */
 router.get('/dashboard', autenticar, soGestor, async (req, res) => {
   try {
     const hoje = req.query.date || new Date().toISOString().slice(0, 10);
-    console.log("📅 DASHBOARD date recebida:", req.query.date, "| usando:", hoje, "| tenant:", req.tenantId);
+    console.log("ðŸ“… DASHBOARD date recebida:", req.query.date, "| usando:", hoje, "| tenant:", req.tenantId);
 
     const [agenda, totais, clientes, alerta] = await Promise.all([
       pool.query(`
@@ -48,7 +48,7 @@ router.get('/dashboard', autenticar, soGestor, async (req, res) => {
       `, [req.tenantId]),
     ]);
 
-    console.log("📅 DASHBOARD resposta: agenda tem", agenda.rows.length, "itens");
+    console.log("ðŸ“… DASHBOARD resposta: agenda tem", agenda.rows.length, "itens");
 
     res.json({
       ok: true,
@@ -66,7 +66,7 @@ router.get('/dashboard', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* GET /gestor/clientes — base de clientes */
+/* GET /gestor/clientes â€” base de clientes */
 router.get('/clientes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -77,8 +77,7 @@ router.get('/clientes', autenticar, soGestor, async (req, res) => {
       LEFT JOIN agendamentos a ON a.cliente_id = c.id
       LEFT JOIN servicos s ON s.id = a.servico_id
       WHERE c.tenant_id = $1
-      GROUP BY c.id
-      ORDER BY c.nome
+      GROUP BY c.id, c.nome, c.whatsapp, c.data_nascimento ORDER BY c.nome
     `, [req.tenantId]);
     res.json({ ok: true, data: rows });
   } catch (err) {
@@ -93,21 +92,21 @@ router.patch('/agendamentos/:id/concluir', autenticar, soGestor, async (req, res
       `UPDATE agendamentos SET status = 'concluido' WHERE id = $1 AND status = 'confirmado' AND tenant_id = $2 RETURNING *`,
       [req.params.id, req.tenantId]
     );
-    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Agendamento não encontrado ou já concluído.' });
-    res.json({ ok: true, mensagem: 'Agendamento concluído!', data: rows[0] });
+    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Agendamento nÃ£o encontrado ou jÃ¡ concluÃ­do.' });
+    res.json({ ok: true, mensagem: 'Agendamento concluÃ­do!', data: rows[0] });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* PUT /gestor/configuracoes/pagseguro — salva token PagSeguro */
+/* PUT /gestor/configuracoes/pagseguro â€” salva token PagSeguro */
 router.put('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ ok: false, erro: 'Informe o token.' });
 
   try {
     const teste = await testarToken(token);
-    if (!teste.ok) return res.status(400).json({ ok: false, erro: teste.erro || 'Token inválido.' });
+    if (!teste.ok) return res.status(400).json({ ok: false, erro: teste.erro || 'Token invÃ¡lido.' });
 
     await pool.query(
       `UPDATE configuracoes SET pagseguro_token = $1, pagseguro_ativo = TRUE, atualizado_em = NOW() WHERE id = 1`,
@@ -120,7 +119,7 @@ router.put('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) =>
   }
 });
 
-/* DELETE /gestor/configuracoes/pagseguro — remove token */
+/* DELETE /gestor/configuracoes/pagseguro â€” remove token */
 router.delete('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) => {
   try {
     await pool.query(
@@ -132,7 +131,7 @@ router.delete('/configuracoes/pagseguro', autenticar, soGestor, async (req, res)
   }
 });
 
-/* POST /gestor/configuracoes/pagseguro/testar — testa token sem salvar */
+/* POST /gestor/configuracoes/pagseguro/testar â€” testa token sem salvar */
 router.post('/configuracoes/pagseguro/testar', autenticar, soGestor, async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ ok: false, erro: 'Informe o token.' });
@@ -141,7 +140,7 @@ router.post('/configuracoes/pagseguro/testar', autenticar, soGestor, async (req,
   res.json(resultado);
 });
 
-/* GET /gestor/configuracoes/lembretes — lê configs de lembretes */
+/* GET /gestor/configuracoes/lembretes â€” lÃª configs de lembretes */
 router.get('/configuracoes/lembretes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -154,7 +153,7 @@ router.get('/configuracoes/lembretes', autenticar, soGestor, async (req, res) =>
   }
 });
 
-/* PUT /gestor/configuracoes/lembretes — atualiza configs */
+/* PUT /gestor/configuracoes/lembretes â€” atualiza configs */
 router.put('/configuracoes/lembretes', autenticar, soGestor, async (req, res) => {
   const { lembrete_24h_ativo, lembrete_1h_ativo, msg_retorno_ativo, msg_retorno_dias } = req.body;
   try {
@@ -172,13 +171,13 @@ router.put('/configuracoes/lembretes', autenticar, soGestor, async (req, res) =>
       msg_retorno_ativo  ?? null,
       msg_retorno_dias != null ? Number(msg_retorno_dias) : null,
     ]);
-    res.json({ ok: true, mensagem: 'Configurações de lembretes atualizadas.' });
+    res.json({ ok: true, mensagem: 'ConfiguraÃ§Ãµes de lembretes atualizadas.' });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* ── JORNADAS ── */
+/* â”€â”€ JORNADAS â”€â”€ */
 
 /* GET /gestor/jornadas */
 router.get('/jornadas', autenticar, soGestor, async (req, res) => {
@@ -210,7 +209,7 @@ router.put('/jornadas/:barbeiro_id', autenticar, soGestor, async (req, res) => {
     const b = await client.query('SELECT id FROM barbeiros WHERE id = $1 AND tenant_id = $2', [barbeiro_id, req.tenantId]);
     if (b.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ ok: false, erro: 'Barbeiro não encontrado.' });
+      return res.status(404).json({ ok: false, erro: 'Barbeiro nÃ£o encontrado.' });
     }
     await client.query('DELETE FROM jornadas WHERE barbeiro_id = $1 AND tenant_id = $2', [barbeiro_id, req.tenantId]);
     for (const j of jornadas) {
@@ -235,7 +234,7 @@ router.put('/jornadas/:barbeiro_id', autenticar, soGestor, async (req, res) => {
 router.post('/encaixes', autenticar, soGestor, async (req, res) => {
   const { barbeiro_id, data, hora_inicio, hora_fim, motivo } = req.body;
   if (!barbeiro_id || !data || !hora_inicio || !hora_fim)
-    return res.status(400).json({ ok: false, erro: 'Campos obrigatórios: barbeiro_id, data, hora_inicio, hora_fim.' });
+    return res.status(400).json({ ok: false, erro: 'Campos obrigatÃ³rios: barbeiro_id, data, hora_inicio, hora_fim.' });
   try {
     const { rows } = await pool.query(`
       INSERT INTO encaixes (barbeiro_id, data, hora_inicio, hora_fim, motivo, tenant_id)
@@ -275,7 +274,7 @@ router.get('/encaixes', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* ── LISTA DE ESPERA ── */
+/* â”€â”€ LISTA DE ESPERA â”€â”€ */
 router.get('/lista-espera', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -305,7 +304,7 @@ router.delete('/lista-espera/:id', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* ── ANIVERSARIANTES ── */
+/* â”€â”€ ANIVERSARIANTES â”€â”€ */
 router.get('/aniversariantes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -332,14 +331,14 @@ router.put('/clientes/:id/nascimento', autenticar, soGestor, async (req, res) =>
       UPDATE clientes SET data_nascimento = $1 WHERE id = $2 AND tenant_id = $3
       RETURNING id, nome, whatsapp, data_nascimento
     `, [data_nascimento, req.params.id, req.tenantId]);
-    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Cliente não encontrado.' });
+    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Cliente nÃ£o encontrado.' });
     res.json({ ok: true, data: rows[0] });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* ── RELATÓRIOS ── */
+/* â”€â”€ RELATÃ“RIOS â”€â”€ */
 
 router.get('/relatorios/agendamentos-por-dia', autenticar, soGestor, async (req, res) => {
   try {
@@ -399,7 +398,7 @@ router.get('/relatorios/barbeiros', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* ── PACOTES DE SERVIÇOS ── */
+/* â”€â”€ PACOTES DE SERVIÃ‡OS â”€â”€ */
 
 router.get('/pacotes', autenticar, soGestor, async (req, res) => {
   try {
@@ -423,7 +422,7 @@ router.get('/pacotes', autenticar, soGestor, async (req, res) => {
 router.post('/pacotes', autenticar, soGestor, async (req, res) => {
   const { nome, descricao, preco_total, sessoes, validade_dias, servicos } = req.body;
   if (!nome || !preco_total || !sessoes)
-    return res.status(400).json({ ok: false, erro: 'Campos obrigatórios: nome, preco_total, sessoes.' });
+    return res.status(400).json({ ok: false, erro: 'Campos obrigatÃ³rios: nome, preco_total, sessoes.' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -492,10 +491,10 @@ router.post('/pacotes/:id/vender', autenticar, soGestor, async (req, res) => {
   let cid = cliente_id;
   try {
     const pkg = await pool.query('SELECT * FROM pacotes WHERE id = $1 AND ativo = TRUE AND tenant_id = $2', [req.params.id, req.tenantId]);
-    if (pkg.rows.length === 0) return res.status(404).json({ ok: false, erro: 'Pacote não encontrado.' });
+    if (pkg.rows.length === 0) return res.status(404).json({ ok: false, erro: 'Pacote nÃ£o encontrado.' });
     if (!cid && whatsapp) {
       const wppLimpo = String(whatsapp).replace(/\D/g, '');
-      if (wppLimpo.length < 10) return res.status(400).json({ ok: false, erro: 'WhatsApp inválido.' });
+      if (wppLimpo.length < 10) return res.status(400).json({ ok: false, erro: 'WhatsApp invÃ¡lido.' });
       const ex = await pool.query('SELECT id FROM clientes WHERE whatsapp = $1 AND tenant_id = $2', [wppLimpo, req.tenantId]);
       if (ex.rows.length > 0) cid = ex.rows[0].id;
       else {
@@ -544,11 +543,11 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
     const cp = await client.query('SELECT * FROM cliente_pacotes WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [req.params.id, req.tenantId]);
     if (cp.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ ok: false, erro: 'Pacote não encontrado.' });
+      return res.status(404).json({ ok: false, erro: 'Pacote nÃ£o encontrado.' });
     }
     if (cp.rows[0].status !== 'ativo' || cp.rows[0].sessoes_restantes <= 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ ok: false, erro: 'Pacote sem sessões restantes.' });
+      return res.status(400).json({ ok: false, erro: 'Pacote sem sessÃµes restantes.' });
     }
     await client.query(`
       UPDATE cliente_pacotes SET
@@ -560,7 +559,7 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
     await client.query(`INSERT INTO pacote_usos (cliente_pacote_id, agendamento_id, tenant_id) VALUES ($1, $2, $3)`,
       [req.params.id, agendamento_id || null, req.tenantId]);
     await client.query('COMMIT');
-    res.json({ ok: true, mensagem: 'Sessão registrada.' });
+    res.json({ ok: true, mensagem: 'SessÃ£o registrada.' });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ ok: false, erro: err.message });
@@ -571,5 +570,6 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
 
 module.exports = router;
 
-/* ── Monta rotas financeiras no mesmo router /gestor ── */
+/* â”€â”€ Monta rotas financeiras no mesmo router /gestor â”€â”€ */
 router.use(financeiroRouter);
+
