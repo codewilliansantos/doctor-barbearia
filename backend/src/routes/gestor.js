@@ -388,8 +388,7 @@ router.get('/relatorios/barbeiros', autenticar, soGestor, async (req, res) => {
       FROM barbeiros b
       LEFT JOIN agendamentos a ON a.barbeiro_id = b.id AND a.data_hora >= NOW() - INTERVAL '30 days' AND a.tenant_id = b.tenant_id
       LEFT JOIN servicos s ON s.id = a.servico_id
-      WHERE b.tenant_id = $1
-      GROUP BY b.id
+      WHERE b.tenant_id = $1 GROUP BY b.id, b.nome
       ORDER BY faturamento DESC
     `, [req.tenantId]);
     res.json({ ok: true, data: rows });
@@ -572,4 +571,5 @@ module.exports = router;
 
 /* â”€â”€ Monta rotas financeiras no mesmo router /gestor â”€â”€ */
 router.use(financeiroRouter);
+
 

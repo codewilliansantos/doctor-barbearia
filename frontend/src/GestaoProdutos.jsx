@@ -29,7 +29,7 @@ export function GestaoProdutos({ showToast }) {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/produtos/gestor/todos", {
+      const res = await fetch("/produtos/gestor/todos", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const json = await res.json();
@@ -72,8 +72,8 @@ export function GestaoProdutos({ showToast }) {
         ativo: d.ativo !== false,
       };
       const url = modal.mode === "create"
-        ? "http://localhost:3001/produtos/gestor"
-        : `http://localhost:3001/produtos/gestor/${d.id}`;
+        ? "/produtos/gestor"
+        : `/produtos/gestor/${d.id}`;
       const method = modal.mode === "create" ? "POST" : "PUT";
       const res = await fetch(url, {
         method,
@@ -93,7 +93,7 @@ export function GestaoProdutos({ showToast }) {
     if (!window.confirm(`Desativar "${p.nome}"?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/produtos/gestor/${p.id}`, {
+      const res = await fetch(`/produtos/gestor/${p.id}`, {
         method: "DELETE",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -107,7 +107,7 @@ export function GestaoProdutos({ showToast }) {
   const reativar = async (p) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/produtos/gestor/${p.id}/reativar`, {
+      const res = await fetch(`/produtos/gestor/${p.id}/reativar`, {
         method: "PATCH",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -122,7 +122,7 @@ export function GestaoProdutos({ showToast }) {
     const { produto, valor } = estoqueModal;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/produtos/gestor/${produto.id}/estoque`, {
+      const res = await fetch(`/produtos/gestor/${produto.id}/estoque`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ estoque: Number(valor) }),
