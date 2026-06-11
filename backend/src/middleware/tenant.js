@@ -26,7 +26,7 @@ async function carregarTenant(slug) {
     if (Date.now() - ts < TTL) return data;
   }
   const r = await pool.query('SELECT * FROM tenants WHERE slug_subdominio = $1 AND ativo = TRUE', [slug]);
-  const tenant = r.rows[0] || { id: 1, slug: 'doctor', nome: process.env.BRAND_NAME || 'Doctor Barbearia' };
+  const tenant = r.rows[0] || { id: 1, slug_subdominio: 'doctor', slug: 'doctor', nome: process.env.BRAND_NAME || 'Doctor Barbearia' };
   cache.set(slug, { data: tenant, ts: Date.now() });
   return tenant;
 }
@@ -37,7 +37,7 @@ async function tenantMiddleware(req, res, next) {
     const tenant = await carregarTenant(slug);
     req.tenantId = tenant.id;
     req.tenant  = tenant;
-    res.setHeader('X-Tenant', tenant.slug);
+    res.setHeader('X-Tenant', tenant.slug_subdominio || tenant.slug || 'doctor');
     next();
   } catch (e) {
     console.error('tenant middleware erro:', e.message, e.stack);
@@ -48,5 +48,6 @@ async function tenantMiddleware(req, res, next) {
 }
 
 module.exports = { tenantMiddleware, extrairSlug, clearCache: () => cache.clear() };
+
 
 
