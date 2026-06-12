@@ -57,7 +57,6 @@ export function GestaoProdutos({ showToast }) {
     }
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
       const body = {
         nome: d.nome.trim(),
         descricao: d.descricao?.trim() || null,
