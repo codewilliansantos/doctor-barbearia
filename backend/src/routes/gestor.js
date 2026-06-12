@@ -1,22 +1,22 @@
-﻿const express = require('express');
+const express = require('express');
 const pool    = require('../database/connection');
 const { autenticar } = require('./auth');
 const { testarToken } = require('../services/pagseg');
 const financeiroRouter = require('./financeiro');
 const router  = express.Router();
 
-/* Middleware: sÃ³ gestores */
+/* Middleware: só gestores */
 function soGestor(req, res, next) {
   if (req.usuario.perfil !== 'gestor')
     return res.status(403).json({ ok: false, erro: 'Acesso restrito a gestores.' });
   next();
 }
 
-/* GET /gestor/dashboard â€” resumo do dia */
+/* GET /gestor/dashboard — resumo do dia */
 router.get('/dashboard', autenticar, soGestor, async (req, res) => {
   try {
     const hoje = req.query.date || new Date().toISOString().slice(0, 10);
-    console.log("ðŸ“… DASHBOARD date recebida:", req.query.date, "| usando:", hoje, "| tenant:", req.tenantId);
+    console.log("📅 DASHBOARD date recebida:", req.query.date, "| usando:", hoje, "| tenant:", req.tenantId);
 
     const [agenda, totais, clientes, alerta] = await Promise.all([
       pool.query(`
@@ -48,7 +48,7 @@ router.get('/dashboard', autenticar, soGestor, async (req, res) => {
       `, [req.tenantId]),
     ]);
 
-    console.log("ðŸ“… DASHBOARD resposta: agenda tem", agenda.rows.length, "itens");
+    console.log("📅 DASHBOARD resposta: agenda tem", agenda.rows.length, "itens");
 
     res.json({
       ok: true,
@@ -66,7 +66,7 @@ router.get('/dashboard', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* GET /gestor/clientes â€” base de clientes */
+/* GET /gestor/clientes — base de clientes */
 router.get('/clientes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -92,21 +92,44 @@ router.patch('/agendamentos/:id/concluir', autenticar, soGestor, async (req, res
       `UPDATE agendamentos SET status = 'concluido' WHERE id = $1 AND status = 'confirmado' AND tenant_id = $2 RETURNING *`,
       [req.params.id, req.tenantId]
     );
-    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Agendamento nÃ£o encontrado ou jÃ¡ concluÃ­do.' });
-    res.json({ ok: true, mensagem: 'Agendamento concluÃ­do!', data: rows[0] });
+    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Agendamento não encontrado ou já concluído.' });
+    res.json({ ok: true, mensagem: 'Agendamento concluído!', data: rows[0] });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* PUT /gestor/configuracoes/pagseguro â€” salva token PagSeguro */
+
+/* GET /gestor/configuracoes � retorna configura��es (pagseguro, etc) */
+router.get('/configuracoes', autenticar, soGestor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      "SELECT pagseguro_ativo, pagseguro_token FROM configuracoes WHERE id = 1"
+    );
+    if (!rows[0]) return res.status(404).json({ ok: false, erro: 'Configura��es n�o encontradas.' });
+    const cfg = rows[0];
+    res.json({
+      ok: true,
+      data: {
+        pagseguro_ativo: cfg.pagseguro_ativo,
+        pagseguro_token_preview: cfg.pagseguro_token
+          ? cfg.pagseguro_token.slice(0, 6) + '����' + cfg.pagseguro_token.slice(-4)
+          : null,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+/* PUT /gestor/configuracoes/pagseguro — salva token PagSeguro */
 router.put('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ ok: false, erro: 'Informe o token.' });
 
   try {
     const teste = await testarToken(token);
-    if (!teste.ok) return res.status(400).json({ ok: false, erro: teste.erro || 'Token invÃ¡lido.' });
+    if (!teste.ok) return res.status(400).json({ ok: false, erro: teste.erro || 'Token inválido.' });
 
     await pool.query(
       `UPDATE configuracoes SET pagseguro_token = $1, pagseguro_ativo = TRUE, atualizado_em = NOW() WHERE id = 1`,
@@ -119,7 +142,7 @@ router.put('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) =>
   }
 });
 
-/* DELETE /gestor/configuracoes/pagseguro â€” remove token */
+/* DELETE /gestor/configuracoes/pagseguro — remove token */
 router.delete('/configuracoes/pagseguro', autenticar, soGestor, async (req, res) => {
   try {
     await pool.query(
@@ -131,7 +154,7 @@ router.delete('/configuracoes/pagseguro', autenticar, soGestor, async (req, res)
   }
 });
 
-/* POST /gestor/configuracoes/pagseguro/testar â€” testa token sem salvar */
+/* POST /gestor/configuracoes/pagseguro/testar — testa token sem salvar */
 router.post('/configuracoes/pagseguro/testar', autenticar, soGestor, async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ ok: false, erro: 'Informe o token.' });
@@ -140,7 +163,7 @@ router.post('/configuracoes/pagseguro/testar', autenticar, soGestor, async (req,
   res.json(resultado);
 });
 
-/* GET /gestor/configuracoes/lembretes â€” lÃª configs de lembretes */
+/* GET /gestor/configuracoes/lembretes — lê configs de lembretes */
 router.get('/configuracoes/lembretes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -153,7 +176,7 @@ router.get('/configuracoes/lembretes', autenticar, soGestor, async (req, res) =>
   }
 });
 
-/* PUT /gestor/configuracoes/lembretes â€” atualiza configs */
+/* PUT /gestor/configuracoes/lembretes — atualiza configs */
 router.put('/configuracoes/lembretes', autenticar, soGestor, async (req, res) => {
   const { lembrete_24h_ativo, lembrete_1h_ativo, msg_retorno_ativo, msg_retorno_dias } = req.body;
   try {
@@ -171,13 +194,13 @@ router.put('/configuracoes/lembretes', autenticar, soGestor, async (req, res) =>
       msg_retorno_ativo  ?? null,
       msg_retorno_dias != null ? Number(msg_retorno_dias) : null,
     ]);
-    res.json({ ok: true, mensagem: 'ConfiguraÃ§Ãµes de lembretes atualizadas.' });
+    res.json({ ok: true, mensagem: 'Configurações de lembretes atualizadas.' });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* â”€â”€ JORNADAS â”€â”€ */
+/* ── JORNADAS ── */
 
 /* GET /gestor/jornadas */
 router.get('/jornadas', autenticar, soGestor, async (req, res) => {
@@ -209,7 +232,7 @@ router.put('/jornadas/:barbeiro_id', autenticar, soGestor, async (req, res) => {
     const b = await client.query('SELECT id FROM barbeiros WHERE id = $1 AND tenant_id = $2', [barbeiro_id, req.tenantId]);
     if (b.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ ok: false, erro: 'Barbeiro nÃ£o encontrado.' });
+      return res.status(404).json({ ok: false, erro: 'Barbeiro não encontrado.' });
     }
     await client.query('DELETE FROM jornadas WHERE barbeiro_id = $1 AND tenant_id = $2', [barbeiro_id, req.tenantId]);
     for (const j of jornadas) {
@@ -234,7 +257,7 @@ router.put('/jornadas/:barbeiro_id', autenticar, soGestor, async (req, res) => {
 router.post('/encaixes', autenticar, soGestor, async (req, res) => {
   const { barbeiro_id, data, hora_inicio, hora_fim, motivo } = req.body;
   if (!barbeiro_id || !data || !hora_inicio || !hora_fim)
-    return res.status(400).json({ ok: false, erro: 'Campos obrigatÃ³rios: barbeiro_id, data, hora_inicio, hora_fim.' });
+    return res.status(400).json({ ok: false, erro: 'Campos obrigatórios: barbeiro_id, data, hora_inicio, hora_fim.' });
   try {
     const { rows } = await pool.query(`
       INSERT INTO encaixes (barbeiro_id, data, hora_inicio, hora_fim, motivo, tenant_id)
@@ -274,7 +297,7 @@ router.get('/encaixes', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* â”€â”€ LISTA DE ESPERA â”€â”€ */
+/* ── LISTA DE ESPERA ── */
 router.get('/lista-espera', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -304,7 +327,7 @@ router.delete('/lista-espera/:id', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* â”€â”€ ANIVERSARIANTES â”€â”€ */
+/* ── ANIVERSARIANTES ── */
 router.get('/aniversariantes', autenticar, soGestor, async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -331,14 +354,14 @@ router.put('/clientes/:id/nascimento', autenticar, soGestor, async (req, res) =>
       UPDATE clientes SET data_nascimento = $1 WHERE id = $2 AND tenant_id = $3
       RETURNING id, nome, whatsapp, data_nascimento
     `, [data_nascimento, req.params.id, req.tenantId]);
-    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Cliente nÃ£o encontrado.' });
+    if (rows.length === 0) return res.status(404).json({ ok: false, erro: 'Cliente não encontrado.' });
     res.json({ ok: true, data: rows[0] });
   } catch (err) {
     res.status(500).json({ ok: false, erro: err.message });
   }
 });
 
-/* â”€â”€ RELATÃ“RIOS â”€â”€ */
+/* ── RELATÓRIOS ── */
 
 router.get('/relatorios/agendamentos-por-dia', autenticar, soGestor, async (req, res) => {
   try {
@@ -397,7 +420,7 @@ router.get('/relatorios/barbeiros', autenticar, soGestor, async (req, res) => {
   }
 });
 
-/* â”€â”€ PACOTES DE SERVIÃ‡OS â”€â”€ */
+/* ── PACOTES DE SERVIÇOS ── */
 
 router.get('/pacotes', autenticar, soGestor, async (req, res) => {
   try {
@@ -420,7 +443,7 @@ router.get('/pacotes', autenticar, soGestor, async (req, res) => {
 router.post('/pacotes', autenticar, soGestor, async (req, res) => {
   const { nome, descricao, preco_total, sessoes, validade_dias, servicos } = req.body;
   if (!nome || !preco_total || !sessoes)
-    return res.status(400).json({ ok: false, erro: 'Campos obrigatÃ³rios: nome, preco_total, sessoes.' });
+    return res.status(400).json({ ok: false, erro: 'Campos obrigatórios: nome, preco_total, sessoes.' });
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -489,10 +512,10 @@ router.post('/pacotes/:id/vender', autenticar, soGestor, async (req, res) => {
   let cid = cliente_id;
   try {
     const pkg = await pool.query('SELECT * FROM pacotes WHERE id = $1 AND ativo = TRUE AND tenant_id = $2', [req.params.id, req.tenantId]);
-    if (pkg.rows.length === 0) return res.status(404).json({ ok: false, erro: 'Pacote nÃ£o encontrado.' });
+    if (pkg.rows.length === 0) return res.status(404).json({ ok: false, erro: 'Pacote não encontrado.' });
     if (!cid && whatsapp) {
       const wppLimpo = String(whatsapp).replace(/\D/g, '');
-      if (wppLimpo.length < 10) return res.status(400).json({ ok: false, erro: 'WhatsApp invÃ¡lido.' });
+      if (wppLimpo.length < 10) return res.status(400).json({ ok: false, erro: 'WhatsApp inválido.' });
       const ex = await pool.query('SELECT id FROM clientes WHERE whatsapp = $1 AND tenant_id = $2', [wppLimpo, req.tenantId]);
       if (ex.rows.length > 0) cid = ex.rows[0].id;
       else {
@@ -541,11 +564,11 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
     const cp = await client.query('SELECT * FROM cliente_pacotes WHERE id = $1 AND tenant_id = $2 FOR UPDATE', [req.params.id, req.tenantId]);
     if (cp.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ ok: false, erro: 'Pacote nÃ£o encontrado.' });
+      return res.status(404).json({ ok: false, erro: 'Pacote não encontrado.' });
     }
     if (cp.rows[0].status !== 'ativo' || cp.rows[0].sessoes_restantes <= 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ ok: false, erro: 'Pacote sem sessÃµes restantes.' });
+      return res.status(400).json({ ok: false, erro: 'Pacote sem sessões restantes.' });
     }
     await client.query(`
       UPDATE cliente_pacotes SET
@@ -557,7 +580,7 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
     await client.query(`INSERT INTO pacote_usos (cliente_pacote_id, agendamento_id, tenant_id) VALUES ($1, $2, $3)`,
       [req.params.id, agendamento_id || null, req.tenantId]);
     await client.query('COMMIT');
-    res.json({ ok: true, mensagem: 'SessÃ£o registrada.' });
+    res.json({ ok: true, mensagem: 'Sessão registrada.' });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ ok: false, erro: err.message });
@@ -568,7 +591,7 @@ router.post('/cliente-pacotes/:id/usar', autenticar, soGestor, async (req, res) 
 
 module.exports = router;
 
-/* â”€â”€ Monta rotas financeiras no mesmo router /gestor â”€â”€ */
+/* ── Monta rotas financeiras no mesmo router /gestor ── */
 router.use(financeiroRouter);
 
 

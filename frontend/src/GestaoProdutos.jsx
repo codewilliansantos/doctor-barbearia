@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "./api";
 import { formatPreco } from "./shared";
 
 const CATEGORIAS = [
@@ -28,12 +29,8 @@ export function GestaoProdutos({ showToast }) {
   const carregar = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/produtos/gestor/todos", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const json = await res.json();
-      setProdutos(json.data || []);
+      const json = await apiFetch("/produtos/gestor/todos");
+      setProdutos(json.data || json);
     } catch (e) { showToast && showToast(e.message, "err"); }
     finally { setLoading(false); }
   };
@@ -75,13 +72,10 @@ export function GestaoProdutos({ showToast }) {
         ? "/produtos/gestor"
         : `/produtos/gestor/${d.id}`;
       const method = modal.mode === "create" ? "POST" : "PUT";
-      const res = await fetch(url, {
+      const json = await apiFetch(url, {
         method,
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.erro || "Erro ao salvar.");
       showToast && showToast(json.mensagem || "Produto salvo!");
       setModal(null);
       carregar();
@@ -92,13 +86,7 @@ export function GestaoProdutos({ showToast }) {
   const desativar = async (p) => {
     if (!window.confirm(`Desativar "${p.nome}"?`)) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/produtos/gestor/${p.id}`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.erro);
+      await apiFetch(`/produtos/gestor/${p.id}`, { method: "DELETE" });
       showToast && showToast("Produto desativado.");
       carregar();
     } catch (e) { showToast && showToast(e.message, "err"); }
@@ -106,13 +94,7 @@ export function GestaoProdutos({ showToast }) {
 
   const reativar = async (p) => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/produtos/gestor/${p.id}/reativar`, {
-        method: "PATCH",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.erro);
+      await apiFetch(`/produtos/gestor/${p.id}/reativar`, { method: "PATCH" });
       showToast && showToast("Produto reativado!");
       carregar();
     } catch (e) { showToast && showToast(e.message, "err"); }
@@ -121,14 +103,10 @@ export function GestaoProdutos({ showToast }) {
   const salvarEstoque = async () => {
     const { produto, valor } = estoqueModal;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/produtos/gestor/${produto.id}/estoque`, {
+      await apiFetch(`/produtos/gestor/${produto.id}/estoque`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ estoque: Number(valor) }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.erro);
       showToast && showToast("Estoque atualizado!");
       setEstoqueModal(null);
       carregar();
