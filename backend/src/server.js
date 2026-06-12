@@ -72,6 +72,7 @@ app.use('/publico',      require('./routes/publico'));
 app.use('/produtos',     require('./routes/produtos'));
 app.use('/gestor/vendas',require('./routes/vendas'));
 app.use('/billing',      require('./routes/billing'));
+app.use('/gestor/google-calendar', require('./routes/googleCalendar'));
 
 app.get('/', (req, res) => {
   res.json({ ok: true, app: '💈 Doctor Barbearia API', versao: '4.0.0', status: 'online' });

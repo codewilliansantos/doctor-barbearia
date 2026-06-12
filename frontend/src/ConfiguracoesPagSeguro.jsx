@@ -185,6 +185,46 @@ export function ConfiguracoesPagSeguro({ onSaved }) {
     }
   };
 
+  const [gcAtivo, setGcAtivo] = useState(false);
+  const [gcEmail, setGcEmail] = useState(null);
+  const [gcLoading, setGcLoading] = useState(true);
+  const [gcMsg, setGcMsg] = useState(null);
+
+  useEffect(() => { loadGcStatus(); }, []);
+
+  const loadGcStatus = async () => {
+    try {
+      const data = await apiFetch("/gestor/google-calendar/status");
+      setGcAtivo(!!data?.ativo);
+      setGcEmail(data?.email || null);
+    } catch {}
+    setGcLoading(false);
+  };
+
+  const conectarGoogle = async () => {
+    setGcMsg(null);
+    try {
+      const data = await apiFetch("/gestor/google-calendar/auth-url");
+      if (data?.url) window.location.href = data.url;
+      else setGcMsg({ type: "err", text: "Erro ao obter URL de autenticação." });
+    } catch (e) {
+      setGcMsg({ type: "err", text: e.message });
+    }
+  };
+
+  const desconectarGoogle = async () => {
+    if (!window.confirm("Desconectar Google Agenda? Os agendamentos deixarão de ser sincronizados.")) return;
+    setGcMsg(null);
+    try {
+      await apiFetch("/gestor/google-calendar", { method: "DELETE" });
+      setGcAtivo(false);
+      setGcEmail(null);
+      setGcMsg({ type: "ok", text: "Google Agenda desconectada." });
+    } catch (e) {
+      setGcMsg({ type: "err", text: e.message });
+    }
+  };
+
   if (loading) return (
     <div style={{ padding: "24px 0", textAlign: "center", color: "rgba(245,237,216,.3)", fontSize: 13 }}>
       Carregando configurações...
@@ -311,6 +351,56 @@ export function ConfiguracoesPagSeguro({ onSaved }) {
           </div>
         )}
       </div>
+
+      {/* ── GOOGLE CALENDAR ── */}
+      <div className="cfg-section">
+        <div className="cfg-section-title">Google Agenda</div>
+        <div className="cfg-card">
+          <div className="cfg-card-head">
+            <div className="cfg-card-title">
+              <span>📅</span>
+              <span>Google Calendar</span>
+            </div>
+            <span className={`cfg-status-badge ${gcAtivo ? "cfg-status-active" : "cfg-status-inactive"}`}>
+              {gcAtivo ? "Conectado" : "Desconectado"}
+            </span>
+          </div>
+          <div className="cfg-card-body">
+            {gcAtivo && (
+              <div className="cfg-token-preview" style={{ marginBottom: 12 }}>
+                <span>{gcEmail}</span>
+                <span>Conectado</span>
+              </div>
+            )}
+            <div className="cfg-btn-row">
+              {!gcAtivo ? (
+                <button className="cfg-btn cfg-btn-primary" disabled={gcLoading} onClick={conectarGoogle}>
+                  {gcLoading ? "Carregando..." : "Conectar Google Agenda"}
+                </button>
+              ) : (
+                <button className="cfg-btn cfg-btn-danger" onClick={desconectarGoogle}>
+                  Desconectar
+                </button>
+              )}
+            </div>
+            {gcMsg && (
+              <div className={`cfg-msg cfg-msg-${gcMsg.type}`}>
+                <span>{gcMsg.type === "ok" ? "✓" : gcMsg.type === "err" ? "✕" : "ℹ"}</span>
+                <span>{gcMsg.text}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {!gcAtivo && (
+        <div className="cfg-msg cfg-msg-info">
+          <span>ℹ</span>
+          <span>
+            Conecte sua Google Agenda para sincronizar automaticamente os agendamentos como eventos no calendário.
+          </span>
+        </div>
+      )}
     </>
   );
 }

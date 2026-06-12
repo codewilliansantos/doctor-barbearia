@@ -119,6 +119,32 @@ router.post('/', validar([
       preco:    d.preco,
     }).catch(console.error);
 
+    // 6. Criar evento no Google Calendar (assíncrono, não bloqueia)
+    try {
+      const cfgRow = await pool.query(
+        'SELECT google_calendar_refresh_token FROM configuracoes WHERE id = 1'
+      );
+      const refreshToken = cfgRow.rows[0]?.google_calendar_refresh_token;
+      if (refreshToken) {
+        const { createEvent, refreshTokens } = require('../services/googleCalendar');
+        const servicoRow = await pool.query('SELECT duracao_min FROM servicos WHERE id = $1', [servico_id]);
+        const duracaoMin = servicoRow.rows[0]?.duracao_min || 60;
+        const startTime = new Date(data_hora);
+        const endTime = new Date(startTime.getTime() + duracaoMin * 60000);
+        const tokens = await refreshTokens(refreshToken);
+        createEvent(tokens, {
+          summary: `\u2702\uFE0F ${d.servico} - ${userNome}`,
+          description: `Cliente: ${userNome} | WhatsApp: ${wppLimpo}\nBarbeiro: ${d.barbeiro}\nServi\u00e7o: ${d.servico} - R$ ${d.preco}`,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          serviceName: d.servico,
+          barberName: d.barbeiro,
+          clientName: userNome,
+          clientWhatsapp: wppLimpo,
+        }).catch(console.error);
+      }
+    } catch {}
+
     res.status(201).json({
       ok: true,
       mensagem: 'Agendamento criado! Confirmação enviada via WhatsApp.',
