@@ -344,9 +344,7 @@ export function AdminApp({ navigate }) {
                 <button className="days-cal-btn" onClick={() => setShowCal(true)}>📅 Ver mês</button>
               </div>
               <div style={{ padding: "22px 28px" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8, padding: 6, background: "rgba(255,255,255,.05)", borderRadius: 6, fontFamily: "monospace" }}>
-                  agendaDate: {agendaDate} | loading: {String(agendaLoading)} | agenda: {agendaData?.agenda?.length ?? "null"} | date_used: {agendaData?.date_used ?? "?"} | itens: {agendaData?.agenda?.length ?? 0}
-                </div>
+                
                 {agendaLoading ? [1,2,3].map(i => <div key={i} className="skel" style={{ height: 65, marginBottom: 8 }} />)
                   : !agendaData?.agenda?.length ? <div className="empty-state"><div className="empty-icon">📅</div><div className="empty-title">Sem agendamentos nesta data</div><div style={{ fontSize: 13 }}>Nenhum agendamento encontrado para este dia.</div></div>
                     : agendaData.agenda.map(a => (
