@@ -23,7 +23,7 @@ export function GestaoColaboradores({ showToast }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { carregar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const abrirCriar = () => setModal({ mode: "create", data: { ...empty } });
   const abrirEditar = (c) => setModal({ mode: "edit", data: { ...c } });
