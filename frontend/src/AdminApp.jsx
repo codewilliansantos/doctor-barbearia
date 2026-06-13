@@ -17,6 +17,7 @@ const GestaoFinanceira = lazy(() => import("./GestaoFinanceira").then(m => ({ de
 const GestaoProdutos = lazy(() => import("./GestaoProdutos").then(m => ({ default: m.GestaoProdutos })));
 const Relatorios = lazy(() => import("./Relatorios").then(m => ({ default: m.Relatorios })));
 const GestaoAssinatura = lazy(() => import("./GestaoAssinatura").then(m => ({ default: m.GestaoAssinatura })));
+const GestaoColaboradores = lazy(() => import("./GestaoColaboradores").then(m => ({ default: m.GestaoColaboradores })));
 
 const LazyFallback = () => (
   <div style={{ padding: 40, textAlign: "center" }}>
@@ -185,6 +186,7 @@ export function AdminApp({ navigate }) {
     { key: "agenda", icon: "📅", label: "Agenda" },
     { key: "clientes", icon: "👥", label: "Clientes" },
     { key: "jornadas", icon: "⏰", label: "Jornadas" },
+    { key: "colaboradores", icon: "👥", label: "Colaboradores" },
     { key: "produtos", icon: "🛍️", label: "Produtos" },
     { key: "aniversariantes", icon: "🎂", label: "Aniversariantes" },
     { key: "listaEspera", icon: "📋", label: "Lista de Espera" },
@@ -387,6 +389,14 @@ export function AdminApp({ navigate }) {
               <SectionHeader title="Jornadas" subtitle="Horários de trabalho dos barbeiros" />
               <div style={{ padding: "22px 28px" }}>
                 <Suspense fallback={<LazyFallback />}><GestaoJornadas showToast={showToast} /></Suspense>
+              </div>
+            </div>
+          )}
+          {tab === "colaboradores" && (
+            <div className="fade-up">
+              <SectionHeader title="Colaboradores" subtitle="Equipe da barbearia" />
+              <div style={{ padding: "22px 28px" }}>
+                <Suspense fallback={<LazyFallback />}><GestaoColaboradores showToast={showToast} /></Suspense>
               </div>
             </div>
           )}
