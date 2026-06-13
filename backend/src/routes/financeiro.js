@@ -343,6 +343,34 @@ router.delete('/contas-receber/:id', autenticar, soGestor, async (req, res) => {
   }
 });
 
+/* GET /gestor/financeiro/movimentos — movimentos detalhados dos últimos 30 dias */
+router.get('/financeiro/movimentos', autenticar, soGestor, async (req, res) => {
+  const { tipo } = req.query;
+  try {
+    let where = `m.tenant_id = $1 AND s.data_abertura >= NOW() - INTERVAL '30 days'`;
+    const params = [req.tenantId];
+    if (tipo === 'entrada' || tipo === 'saida') {
+      params.push(tipo);
+      where += ` AND m.tipo = $2`;
+    }
+    const { rows } = await pool.query(`
+      SELECT m.*, c.nome AS cliente_nome,
+             TO_CHAR(m.criado_em, 'DD/MM/YYYY HH24:MI') AS data_fmt
+      FROM caixa_movimentacoes m
+      JOIN caixa_sessoes s ON s.id = m.caixa_id
+      LEFT JOIN agendamentos a ON a.id = m.agendamento_id
+      LEFT JOIN clientes c ON c.id = a.cliente_id
+      WHERE ${where}
+      ORDER BY m.criado_em DESC
+      LIMIT 200
+    `, params);
+    const total = rows.reduce((acc, r) => acc + Number(r.valor), 0);
+    res.json({ ok: true, data: rows, total });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
 /* ──────────────────── RESUMO FINANCEIRO ──────────────────── */
 
 router.get('/financeiro/resumo', autenticar, soGestor, async (req, res) => {

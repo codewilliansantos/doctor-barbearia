@@ -9,6 +9,7 @@ export function GestaoFinanceira({ showToast }) {
   const [aba, setAba] = useState("caixa");
   const [resumo, setResumo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [detalhe, setDetalhe] = useState(null);
 
   const carregarResumo = async () => {
     try {
@@ -26,12 +27,14 @@ export function GestaoFinanceira({ showToast }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-        <KPI label="💰 Entradas (30d)" val={`R$ ${Number(resumo?.mes?.entradas || 0).toFixed(0)}`} color="green" />
-        <KPI label="💸 Saídas (30d)" val={`R$ ${Number(resumo?.mes?.saidas || 0).toFixed(0)}`} color="red" />
-        <KPI label="📈 Lucro (30d)" val={`R$ ${Number(resumo?.mes?.lucro || 0).toFixed(0)}`} color={resumo?.mes?.lucro >= 0 ? "green" : "red"} />
-        <KPI label="📤 A Pagar" val={`${resumo?.a_pagar?.pendentes || 0} pendentes`} sub={`R$ ${Number(resumo?.a_pagar?.valor_total || 0).toFixed(0)}`} color="red" />
-        <KPI label="📥 A Receber" val={`${resumo?.a_receber?.pendentes || 0} pendentes`} sub={`R$ ${Number(resumo?.a_receber?.valor_total || 0).toFixed(0)}`} color="green" />
+        <KPI label="💰 Entradas (30d)" val={`R$ ${Number(resumo?.mes?.entradas || 0).toFixed(0)}`} color="green" onClick={() => setDetalhe("entradas")} />
+        <KPI label="💸 Saídas (30d)" val={`R$ ${Number(resumo?.mes?.saidas || 0).toFixed(0)}`} color="red" onClick={() => setDetalhe("saidas")} />
+        <KPI label="📈 Lucro (30d)" val={`R$ ${Number(resumo?.mes?.lucro || 0).toFixed(0)}`} color={resumo?.mes?.lucro >= 0 ? "green" : "red"} onClick={() => setDetalhe("lucro")} />
+        <KPI label="📤 A Pagar" val={`${resumo?.a_pagar?.pendentes || 0} pendentes`} sub={`R$ ${Number(resumo?.a_pagar?.valor_total || 0).toFixed(0)}`} color="red" onClick={() => setDetalhe("a_pagar")} />
+        <KPI label="📥 A Receber" val={`${resumo?.a_receber?.pendentes || 0} pendentes`} sub={`R$ ${Number(resumo?.a_receber?.valor_total || 0).toFixed(0)}`} color="green" onClick={() => setDetalhe("a_receber")} />
       </div>
+
+      {detalhe && <DetalheFinanceiro tipo={detalhe} resumo={resumo} onClose={() => setDetalhe(null)} showToast={showToast} />}
 
       <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 12, padding: 18 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
@@ -51,17 +54,164 @@ export function GestaoFinanceira({ showToast }) {
   );
 }
 
-function KPI({ label, val, sub, color }) {
+function KPI({ label, val, sub, color, onClick }) {
   const colors = {
     green: { val: "#5BCF7A" },
     red: { val: "#ff7a7a" },
     gold: { val: "var(--gold)" },
   };
   return (
-    <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 14 }}>
+    <div onClick={onClick} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: 14, cursor: onClick ? "pointer" : "default", transition: "all .2s" }}
+      onMouseEnter={e => { if (onClick) { e.currentTarget.style.borderColor = "var(--gold-border)"; e.currentTarget.style.transform = "translateY(-2px)"; } }}
+      onMouseLeave={e => { if (onClick) { e.currentTarget.style.borderColor = ""; e.currentTarget.style.transform = ""; } }}>
       <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 700, color: colors[color]?.val }}>{val}</div>
       {sub && <div style={{ fontSize: 11, color: "var(--muted)" }}>{sub}</div>}
+    </div>
+  );
+}
+
+function DetalheFinanceiro({ tipo, resumo, onClose, showToast }) {
+  const [dados, setDados] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      if (tipo === "entradas" || tipo === "saidas") {
+        try {
+          const r = await apiFetch(`/gestor/financeiro/movimentos?tipo=${tipo === "entradas" ? "entrada" : "saida"}`);
+          setDados(r);
+        } catch (e) { showToast && showToast(e.message, "err"); }
+      } else {
+        setDados(null);
+      }
+      setLoading(false);
+    })();
+  }, [tipo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const config = {
+    entradas: { icon: "💰", cor: "#5BCF7A", titulo: "Entradas (30 dias)", valor: resumo?.mes?.entradas || 0 },
+    saidas: { icon: "💸", cor: "#ff7a7a", titulo: "Saídas (30 dias)", valor: resumo?.mes?.saidas || 0 },
+    lucro: { icon: "📈", cor: resumo?.mes?.lucro >= 0 ? "#5BCF7A" : "#ff7a7a", titulo: "Lucro (30 dias)", valor: resumo?.mes?.lucro || 0 },
+    a_pagar: { icon: "📤", cor: "#ff7a7a", titulo: "Contas a Pagar", pendentes: resumo?.a_pagar?.pendentes || 0, atrasadas: resumo?.a_pagar?.atrasadas || 0, total: resumo?.a_pagar?.valor_total || 0 },
+    a_receber: { icon: "📥", cor: "#5BCF7A", titulo: "Contas a Receber", pendentes: resumo?.a_receber?.pendentes || 0, atrasadas: resumo?.a_receber?.atrasadas || 0, total: resumo?.a_receber?.valor_total || 0 },
+  };
+  const cfg = config[tipo];
+
+  return (
+    <div className="modal-ov" onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 600, maxHeight: "85vh", overflow: "auto", animation: "pop .3s ease" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+          <div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, fontWeight: 700 }}>{cfg.icon} {cfg.titulo}</div>
+            {tipo === "entradas" || tipo === "saidas" || tipo === "lucro" ? (
+              <div style={{ fontSize: 32, fontWeight: 700, color: cfg.cor, marginTop: 4 }}>R$ {Number(cfg.valor).toFixed(2)}</div>
+            ) : (
+              <div style={{ marginTop: 4 }}>
+                <span style={{ fontSize: 13, color: "var(--muted)" }}>{cfg.pendentes} pendente(s)</span>
+                {cfg.atrasadas > 0 && <span style={{ fontSize: 13, color: "#ff7a7a", marginLeft: 12 }}>⚠ {cfg.atrasadas} atrasada(s)</span>}
+                <div style={{ fontSize: 24, fontWeight: 700, color: cfg.cor, marginTop: 4 }}>R$ {Number(cfg.total).toFixed(2)}</div>
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", fontSize: 24, color: "var(--muted)", cursor: "pointer", padding: 8 }}>✕</button>
+        </div>
+
+        {(tipo === "entradas" || tipo === "saidas") && (
+          <>
+            {loading ? <div className="skel" style={{ height: 200 }} /> : !dados?.data?.length ? (
+              <div className="empty-state" style={{ padding: 30 }}><div className="empty-icon">{cfg.icon}</div><div className="empty-title">Nenhuma movimentação</div></div>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>{dados.data.length} movimentação(ões) · Total: R$ {Number(dados.total).toFixed(2)}</div>
+                {dados.data.map(m => (
+                  <div key={m.id} style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 10, alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+                    <div style={{ fontSize: 16 }}>{m.tipo === "entrada" ? "📥" : "📤"}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{m.descricao || m.categoria || (m.tipo === "entrada" ? "Entrada" : "Saída")}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {m.data_fmt || new Date(m.criado_em).toLocaleString("pt-BR")}
+                        {m.cliente_nome && ` · ${m.cliente_nome}`}
+                        {m.forma_pagamento && ` · ${m.forma_pagamento}`}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: m.tipo === "entrada" ? "#5BCF7A" : "#ff7a7a", textAlign: "right" }}>
+                      {m.tipo === "entrada" ? "+" : "-"} R$ {Number(m.valor).toFixed(2)}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
+
+        {tipo === "lucro" && (
+          <div style={{ padding: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ background: "var(--bg3)", borderRadius: 10, padding: 16, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Entradas</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#5BCF7A" }}>R$ {Number(resumo?.mes?.entradas || 0).toFixed(2)}</div>
+              </div>
+              <div style={{ background: "var(--bg3)", borderRadius: 10, padding: 16, textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Saídas</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#ff7a7a" }}>R$ {Number(resumo?.mes?.saidas || 0).toFixed(2)}</div>
+              </div>
+            </div>
+            <div style={{ background: "linear-gradient(135deg,var(--gold-dim),transparent)", border: "1px solid var(--gold-border)", borderRadius: 10, padding: 16, textAlign: "center", marginTop: 12 }}>
+              <div style={{ fontSize: 10, color: "var(--gold)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Resultado (Entradas - Saídas)</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: cfg.cor }}>R$ {Number(resumo?.mes?.lucro || 0).toFixed(2)}</div>
+            </div>
+          </div>
+        )}
+
+        {(tipo === "a_pagar" || tipo === "a_receber") && (
+          <ListaContasDetalhe tipo={tipo} showToast={showToast} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ListaContasDetalhe({ tipo, showToast }) {
+  const endpoint = tipo === "a_pagar" ? "/gestor/contas-pagar" : "/gestor/contas-receber";
+  const [lista, setLista] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await apiFetch(endpoint);
+        setLista(r.data || []);
+      } catch (e) { showToast && showToast(e.message, "err"); }
+      setLoading(false);
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) return <div className="skel" style={{ height: 200 }} />;
+
+  if (lista.length === 0) return <div className="empty-state" style={{ padding: 30 }}><div className="empty-icon">{tipo === "a_pagar" ? "📤" : "📥"}</div><div className="empty-title">Nenhuma conta</div></div>;
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>{lista.length} registro(s)</div>
+      {lista.map(c => (
+        <div key={c.id} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 10, alignItems: "center", padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{c.descricao}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>
+              {c.fornecedor || c.cliente_nome ? `${c.fornecedor || c.cliente_nome} · ` : ""}
+              Vence: {new Date(c.data_vencimento).toLocaleDateString("pt-BR")}
+              {c.dias_atraso < 0 && ` · ⚠️ ${Math.abs(c.dias_atraso)}d atraso`}
+            </div>
+          </div>
+          <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 12,
+            background: c.status === "pago" || c.status === "recebido" ? "rgba(91,207,122,.15)" : c.dias_atraso < 0 ? "rgba(255,80,80,.15)" : "var(--bg3)",
+            color: c.status === "pago" || c.status === "recebido" ? "#5BCF7A" : c.dias_atraso < 0 ? "#ff7a7a" : "var(--muted)" }}>
+            {c.status === "pago" ? "✓ Pago" : c.status === "recebido" ? "✓ Recebido" : c.dias_atraso < 0 ? "Atrasado" : "Pendente"}
+          </span>
+          <div style={{ fontSize: 14, fontWeight: 700, minWidth: 90, textAlign: "right" }}>R$ {Number(c.valor).toFixed(2)}</div>
+        </div>
+      ))}
     </div>
   );
 }
